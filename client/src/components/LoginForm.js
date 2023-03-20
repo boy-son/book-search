@@ -27,19 +27,11 @@ const LoginForm = () => {
     }
 
     try {
-      // TODO: refactor code to call login and pass required arguments
-
-
-      // const response = await loginUser(userFormData);
-
-      // if (!response.ok) {
-      //   throw new Error('something went wrong!');
-      // }
-
-      // const { token, user } = await response.json();
-      // console.log(user);
-      // Auth.login(token);
-      
+      const { data } = await loginUser({
+        variables: { email: userFormData.email, password: userFormData.password },
+      });
+  
+      Auth.login(data.login.token);
     } catch (err) {
       console.error(err);
       setShowAlert(true);
