@@ -5,13 +5,25 @@ const { signToken } = require("../utils/auth");
 const resolvers = {
   Query: {
     me: async (parent, args, context) => {
-      // find current user and return userData
-    },
+      if (context.user) {
+          const userData = await User
+              .findOne({ _id: context.user._id })
+              .select("-__v -password")
+              .populate("books");
+          
+          return userData;
+      };
+      throw new AuthenticationError("You must be logged in!");
   },
+}, 
+
 
   Mutation: {
     addUser: async (parent, args) => {
-      // create new user, sign token, return token and user data
+      const user = await User.create(args);
+      const token = signToken(user);
+
+      return { token, user };
     },
     login: async (parent, { email, password }) => {
       // Find the user by email
@@ -32,12 +44,31 @@ const resolvers = {
       // Return the token and user data
       return { token, user };
     },
-    saveBook: async (parent, args, context) => {
-      // protect route, find current user, update their savedBooks array, return user data
-    },
-    removeBook: async (parent, args, context) => {
-      // protect route, find current user, update their savedBooks array, return user data
-    },
+    saveBook: async (parent, { bookData }, context) => {
+      if (context.user) {
+          const updatedUser = await User
+              .findOneAndUpdate(
+                  { _id: context.user._id }, 
+                  { $addToSet: { savedBooks: bookData } },
+                  { new: true },
+              )
+              .populate("books");
+          return updatedUser;
+      };
+      throw new AuthenticationError("You must be logged in to save books!");
+  },
+
+  removeBook: async (parent, { bookId }, context) => {
+    if (context.user) {
+        const updatedUser = await User.findOneAndUpdate(
+            { _id: context.user._id },
+            { $pull: { savedBooks: { bookId } } },
+            { new: true },
+        );
+        return updatedUser;
+    };
+    throw new AuthenticationError("You must be logged in to delete books!");
+},
   },
 };
 
